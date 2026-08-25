@@ -1,0 +1,22 @@
+# Virtual environment
+venv/
+.venv/
+
+# Environment variables
+.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Testing
+.pytest_cache/
+
+# Type checking
+.mypy_cache/
+
+# IDE
+.vscode/
+
+# OS
+.DS_Store

@@ -1,0 +1,30 @@
+from fastapi import FastAPI, Request
+from app.routers.auth import router as auth_router
+from app.routers.api_key import router as api_key_router
+from app.services.write_request_log import write_request_log
+from starlette.background import BackgroundTask
+
+app = FastAPI()
+
+@app.middleware("http")
+async def log_request_middleware(request:Request, call_next):
+    response = await call_next(request)
+
+    if request.url.path != "/demo":
+        return response
+
+    user_id = getattr(request.state, "user_id", None)
+    api_key_id = getattr(request.state, "api_key_id", None)
+
+    response.background = BackgroundTask(
+        write_request_log, user_id, api_key_id, response.status_code
+    )
+    return response
+
+
+@app.get("/")
+def hello():
+    return "Hello"
+
+app.include_router(auth_router)
+app.include_router(api_key_router)
