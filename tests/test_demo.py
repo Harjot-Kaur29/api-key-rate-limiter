@@ -19,7 +19,7 @@ async def _get_valid_api_key_and_auth(client, email="demouser@example.com"):
 async def test_demo_success(client, db_session, redis_client):
     raw_key, auth_headers = await _get_valid_api_key_and_auth(client)
 
-    headers = {**auth_headers, "X-API-Key": raw_key}
+    headers = {"X-API-Key": raw_key}
     response = await client.get("/demo", headers=headers)
 
     assert response.status_code == 200
@@ -27,14 +27,15 @@ async def test_demo_success(client, db_session, redis_client):
 
 
 async def test_demo_missing_api_key_header(client, db_session):
-    _, auth_headers = await _get_valid_api_key_and_auth(client)
-    response = await client.get("/demo", headers=auth_headers)  # no X-API-Key
+    response = await client.get(
+        "/demo",
+        headers={}
+    )
     assert response.status_code == 422
 
 
 async def test_demo_invalid_api_key(client, db_session):
-    _, auth_headers = await _get_valid_api_key_and_auth(client)
-    headers = {**auth_headers, "X-API-Key": "not-a-real-key-12345"}
+    headers = {"X-API-Key": "not-a-real-key-12345"}
     response = await client.get("/demo", headers=headers)
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid API key"
@@ -42,7 +43,7 @@ async def test_demo_invalid_api_key(client, db_session):
 
 async def test_demo_rate_limit_exceeded(client, db_session, redis_client):
     raw_key, auth_headers = await _get_valid_api_key_and_auth(client)
-    headers = {**auth_headers, "X-API-Key": raw_key}
+    headers = {"X-API-Key": raw_key}
 
     last_response = None
     for _ in range(101):

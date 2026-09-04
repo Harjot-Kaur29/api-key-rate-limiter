@@ -18,7 +18,7 @@ def get_current_user(request: Request, authorization: str = Header(...))  -> int
 
     try:
         user_id = decode_access_token(token)
-        request.state.user_id = user_id
+        # request.state.user_id = user_id
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError:
@@ -30,9 +30,16 @@ def get_redis():
     return redis_client
 
 
-def check_api_key(request:Request, x_api_key: str = Header(...), current_user: int = Depends(get_current_user), db:Session = Depends(get_db)):
+def check_api_key(request:Request, x_api_key: str = Header(...), db:Session = Depends(get_db)):
     hashed_key = hashlib.sha256(x_api_key.encode()).hexdigest()
+
+    # START DB TIMER
+    db_start = time.perf_counter()
     api_key = (db.query(APIKey).filter(APIKey.hashed_key == hashed_key).first())
+    db_time = time.perf_counter() - db_start
+
+    if db_time * 1000 > 100:
+        print(f"API KEY DB QUERY: {db_time * 1000:.2f} ms")
 
     if api_key is None:
         raise HTTPException(
@@ -46,12 +53,8 @@ def check_api_key(request:Request, x_api_key: str = Header(...), current_user: i
             detail="API key is inactive"
         )
 
-    if api_key.user_id != current_user:
-        raise HTTPException(
-            status_code=403,
-            detail="API key does not belong to current user"
-        )
     request.state.api_key_id = api_key.id
+    request.state.user_id = api_key.user_id
     return api_key
 
 
@@ -128,6 +131,9 @@ async def check_rate_limit(api_key:APIKey = Depends(check_api_key), redis = Depe
 
     elapsed = now % WINDOW
 
+    # START REDIS TIMER
+    redis_start = time.perf_counter()
+
     result = await redis.eval(
         RATE_LIMIT_SCRIPT,
         2,
@@ -138,11 +144,16 @@ async def check_rate_limit(api_key:APIKey = Depends(check_api_key), redis = Depe
         LIMIT
     )
 
-    print(
-    "allowed:", result[0],
-    "current:", result[1],
-    "previous:", result[2],
-    "estimated:", result[3])
+    # END REDIS TIMER
+    redis_time = time.perf_counter() - redis_start
+    if redis_time * 1000 >100:
+        print(f"REDIS EVAL: {redis_time * 1000:.2f} ms")
+
+    # print(
+    # "allowed:", result[0],
+    # "current:", result[1],
+    # "previous:", result[2],
+    # "estimated:", result[3])
 
     allowed = result[0]
 

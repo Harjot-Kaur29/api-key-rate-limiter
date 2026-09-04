@@ -12,7 +12,7 @@ The project was built to demonstrate how rate limiting can be designed and imple
 
 - User registration and JWT-based authentication
 - API key generation and management
-- API key validation and ownership verification
+- API key validation
 - Sliding window Counter-based rate limiting
 - Redis-backed request counters and rate-limit state
 - PostgreSQL-based persistent data storage
