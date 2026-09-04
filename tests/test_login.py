@@ -1,7 +1,7 @@
 import pytest
 
 
-async def test_login_success(client, db_session):
+async def test_login_success(client, db_session_fixture):
 
     register_payload = {
         "username": "alice",
@@ -28,7 +28,7 @@ async def test_login_success(client, db_session):
     assert "acess_token" in body and body["acess_token"]
 
 
-async def test_login_nonexistent_email(client, db_session):
+async def test_login_nonexistent_email(client, db_session_fixture):
     payload = {
         "email": "random@example.com",
         "password":"StrongPass1231"
@@ -39,7 +39,7 @@ async def test_login_nonexistent_email(client, db_session):
     assert response.json()["detail"] == "Invalid credentials"
 
 
-async def test_login_wrong_password(client, db_session):
+async def test_login_wrong_password(client, db_session_fixture):
     register_payload = {
         "username": "bob",
         "email": "bob@example.com",

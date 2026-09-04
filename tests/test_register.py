@@ -1,7 +1,7 @@
 import pytest
 from app.models.user import User
 
-async def test_register_success(client, db_session):
+async def test_register_success(client, db_session_fixture):
     payload = {
         "username":"alice",
         "email":"alice@example.com",
@@ -17,7 +17,7 @@ async def test_register_success(client, db_session):
 
     #Check the actual DB side effect, not just the response.
     
-    user = db_session.query(User).filter(User.email == "alice@example.com").first()
+    user = db_session_fixture.query(User).filter(User.email == "alice@example.com").first()
 
     assert user is not None
     assert user.username == "alice"
@@ -27,7 +27,7 @@ async def test_register_success(client, db_session):
     assert user.hashed_password != "StrongPass123!"
 
 
-async def test_register_duplicate_email(client, db_session):
+async def test_register_duplicate_email(client, db_session_fixture):
     payload = {
         "username" : "bob",
         "email": "bob@example.com",
@@ -49,7 +49,7 @@ async def test_register_duplicate_email(client, db_session):
 
     #Confirm only One row exists 
 
-    count = db_session.query(User).filter(User.email == "bob@example.com").count()
+    count = db_session_fixture.query(User).filter(User.email == "bob@example.com").count()
     assert count == 1
 
 
